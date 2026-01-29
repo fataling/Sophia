@@ -11,6 +11,23 @@
 
 # How can use?
 
+**First step**, you will need to import the repository itself to your local machine (Linux/macOS/Windows, etc.):
+```bash
+https://github.com/prettynnn/Sophia_assistant
+```
+Then second step, you should install some library for your device:
+```bash
+pip3 install aiogram==3.23.0
+             aiomysql==0.3.2
+             asyncio==4.0.0
+             openai==2.14.0
+             pydantic=2.11.10
+```
+## Recommended: 
+Install all the mentioned tools in a venv, as problems with installing dependencies may occur in the main env.
+
+# Congrats!
+Now Sophia is ready to help you, have a nice conversation!
 
 # Some examples:
 <img width="415" height="416" alt="image" src="https://github.com/user-attachments/assets/e6857b9e-f468-44ac-b1c7-1533d8c8cfea" />
