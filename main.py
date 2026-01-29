@@ -4,7 +4,7 @@ from aiogram import Dispatcher, Bot
 from tokens import api_key
 from others.cfg import log
 
-from database.memory import connector_to_server, create_database, create_table
+from database.db import connector_to_server, create_database, create_table
 
 import asyncio
 
