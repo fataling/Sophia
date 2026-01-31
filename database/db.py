@@ -73,17 +73,14 @@ async def select_data_from_table(connect: Connection, user: str) -> tuple | list
     try:
         csr = await connect.cursor()
         await csr.execute('USE SophiaBase')
-        await csr.execute('SELECT roles, contents '
+        await csr.execute('SELECT users, roles, contents '
                           'FROM SophiaTable '
                           'WHERE users = %s '
                           'ORDER BY id DESC '
                           'LIMIT 30', 
                           (user, ))
         results = await csr.fetchall()
-        if results != None:
-            return results
-        else:
-            return []
+        return results
     except OperationalError:
         log('Server is not available!')
     except ProgrammingError:
