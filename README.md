@@ -15,7 +15,7 @@
 ```bash
 https://github.com/prettynnn/Sophia_assistant
 ```
-Then second step, you should install some library for your device:
+Then **second step**, you should install some library for your device:
 ```bash
 pip3 install aiogram==3.23.0
              aiomysql==0.3.2
@@ -23,12 +23,14 @@ pip3 install aiogram==3.23.0
              openai==2.14.0
              pydantic=2.11.10
 ```
-## Recommended: 
-Install all the mentioned tools in a venv, as problems with installing dependencies may occur in the main env.
+
+On **third step**, you should open the directory with **Sophia** to launch it:
+```bash
+cd Sophia
+```
 
 # Congrats!
 Now Sophia is ready to help you, have a nice conversation!
 
-# Some examples:
-<img width="415" height="416" alt="image" src="https://github.com/user-attachments/assets/e6857b9e-f468-44ac-b1c7-1533d8c8cfea" />
-<img width="420" height="408" alt="image" src="https://github.com/user-attachments/assets/df440c3f-0f4e-4bba-91ab-089d29b72363" />
+## Recommended: 
+Install all the mentioned tools in a venv, as problems with installing dependencies may occur in the main env.
