@@ -13,7 +13,7 @@
 
 **First step**, you will need to import the repository itself to your local machine (Linux/macOS/Windows, etc.):
 ```bash
-https://github.com/prettynnn/Sophia_assistant
+https://github.com/prettynnn/Sophia
 ```
 Then **second step**, you should install some library for your device:
 ```bash
