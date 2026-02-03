@@ -1,14 +1,92 @@
-from aiogram.enums import ChatAction, ParseMode
+from aiogram.enums import ChatAction
 from aiogram import types, Router, F
 from aiogram.exceptions import TelegramAPIError, TelegramForbiddenError
 
 from others.cfg import model, client, log
-from database.roles import user, assistant
-from openai import AuthenticationError, InternalServerError, APITimeoutError
-from database.db import connector_to_server, include_in_table, select_data_from_table
+from openai import InternalServerError, APITimeoutError
+from database.db import sql_cnn_pool, sql_get_table, sql_include_table, Pool
 
 text_router = Router()
 
+async def handler_message_from_user(message: types.Message, pool: Pool) -> int:
+    user_id = message.from_user.id
+    data = await sql_get_table(pool,
+                                user_id)
+    
+    if len(data) < 1:
+        content = 'I am a helpful assistant a Sophia'
+        await sql_include_table(pool,
+                                user_id,
+                                'system',
+                                content)
+    return user_id
+
+async def handler_create_history_with_user(message: types.Message, pool: Pool, user_id: int):
+    user_request = message.text
+    await sql_include_table(pool,
+                            user_id,
+                            'user',
+                            user_request)
+    
+async def handler_thinking_answer(message: types.Message) -> types.Message:
+    await message.bot.send_chat_action(action=ChatAction.TYPING,
+                                       chat_id=message.chat.id)
+    thinking = await message.answer(
+        text=f'Thinking...'
+        )
+    return thinking
+
+async def handler_create_context_window(pool: Pool, user_id: int) -> list:
+    raw_context = []
+    data = await sql_get_table(pool,
+                                user_id)
+    for role, content in data:
+        raw_context.append({'role': role,
+                            'content': content})
+    
+    context = raw_context[::-1]
+    if context != None:
+        raw_context.clear()
+        return context
+    
+async def handler_create_response(message: types.Message, context: dict) -> types.Message | None:
+    try:
+        model_response = client.responses.create(model=model,
+                                                 input=context,
+                                                 stream=False)
+        assistant_response = model_response.output_text
+        
+        if assistant_response != None:
+            return assistant_response
+    except InternalServerError as a:
+        await message.reply(
+            text=f'Service is overloaded now, try again later! - {a}'
+            )
+        return None
+    except APITimeoutError as b:
+        await message.reply(
+            text=f'Server not reply for your request, please try again! - {b}'
+                )
+        return None
+
+async def handler_assistant_update_data(pool: Pool, assistant_response: str, user_id: int) -> None:
+    await sql_include_table(pool,
+                            user_id,
+                            'assistant',
+                            assistant_response)
+        
+async def handler_message_chat(message: types.Message, assistant_response: str, thinking: str) -> None:
+    try:
+        await message.bot.send_chat_action(action=ChatAction.TYPING,
+                                           chat_id=message.chat.id)
+        await thinking.edit_text(
+            text=assistant_response
+        )
+    except TelegramAPIError as a:
+        log(f'An error occurred while receiving a response from Telegram! - {a}')
+    except TelegramForbiddenError as b:
+        log(f'This bot is blocked, change a bot! - {b}')
+        
 @text_router.message(F.photo)
 async def photo_handler(message: types.Message) -> None:
     await message.reply(
@@ -44,77 +122,21 @@ async def video_handler(message: types.Message) -> None:
     await message.reply(
         text="Voice? What? Only text message!"
         )
-
-async def handler_user_request_update_data(message: types.Message):
-    connect = await connector_to_server()
-    user_id = message.from_user.id
-    user_request = message.text
     
-    await include_in_table(connect,
-                           user_id,
-                           user,
-                           user_request)
-    
-async def handler_thinking_process(message: types.Message):
-    await message.bot.send_chat_action(action=ChatAction.TYPING,
-                                       chat_id=message.chat.id)
-    thinking = await message.answer(
-        text='Thinking...'
-        )
-    return thinking
-    
-async def handler_create_context(message: types.Message):    
-    user_id = message.from_user.id
-    
-    connect = await connector_to_server()
-    data = await select_data_from_table(connect,
-                                        user_id)
-    raw_context = []
-    for role, content in data:
-        raw_context.append({'role': role,
-                            'content': content})
-    context = raw_context[::-1]
-    return context
-
-async def request_to_model(context):
-    text = client.responses.create(model=model,
-                                   input=context,
-                                   stream=False)
-    return text
-
 @text_router.message(F.text)
-async def handler_response_bot(message: types.Message) -> None:
-    try:
-        await handler_user_request_update_data(message)
-        thinking = await handler_thinking_process(message)
-        context = await handler_create_context(message)
-        text = client.responses.create(model=model,
-                                       input=context,
-                                       stream=False)
-        response = text.output_text
-        await message.bot.send_chat_action(action=ChatAction.TYPING,
-                                         chat_id=message.chat.id)
-        await thinking.edit_text(response)
-    except AuthenticationError as a:
-       log(f'Your API token is incorrect, replace his! - {a}')
-    except InternalServerError as b:
-        log(f'Server is overloaded, try again... - {b}')
-        await message.reply(
-            text='Service is overloaded now, try again later!'
-            )
-    except APITimeoutError as c:
-        log(f'Server not answers, waiting... - {c}')
-        await message.reply(
-            text='Server not reply for your request, please try again!'
-            )
-    except TelegramAPIError as d:
-        log(f'An error occurred while receiving a response from Telegram! - {d}')
-    except TelegramForbiddenError as e:
-        log(f'This bot is blocked, change a bot! - {e}')
-        
-async def handler_assistant_request_update_data(message: types.Message, assistant: str, user_id: int, response: str, connect):
-    await include_in_table(connect,
-                           user_id,
-                           assistant,
-                           response)
-        
+async def text_handler(message: types.Message) -> None:
+    pool = await sql_cnn_pool()
+    
+    message_user = await handler_message_from_user(message, pool)
+    
+    await handler_create_history_with_user(message, pool, message_user)
+    
+    thinking = await handler_thinking_answer(message)
+    
+    context = await handler_create_context_window(pool, message_user)
+    
+    request_to_model = await handler_create_response(message, context)
+    
+    await handler_assistant_update_data(pool, request_to_model, message_user)
+    
+    await handler_message_chat(message, request_to_model, thinking)
