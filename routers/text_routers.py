@@ -77,8 +77,6 @@ async def handler_assistant_update_data(pool: Pool, assistant_response: str, use
         
 async def handler_message_chat(message: types.Message, assistant_response: str, thinking: str) -> None:
     try:
-        await message.bot.send_chat_action(action=ChatAction.TYPING,
-                                           chat_id=message.chat.id)
         await thinking.edit_text(
             text=assistant_response
         )
