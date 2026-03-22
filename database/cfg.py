@@ -1,4 +1,4 @@
-DB_HOST=''
-DB_PASSWORD=''
-DB_PORT=''
-DB_USER=''
+DB_HOST=None
+DB_PASSWORD=None
+DB_PORT=None
+DB_USER=None
