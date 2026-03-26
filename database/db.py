@@ -1,5 +1,10 @@
 from others.cfg import log
-from .cfg import DB_HOST, DB_PASSWORD, DB_USER, DB_PORT
+from .cfg import (
+    DB_HOST,
+    DB_PASSWORD,
+    DB_USER,
+    DB_PORT
+    )
 
 from aiomysql import (
     ProgrammingError, 
