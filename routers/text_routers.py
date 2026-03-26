@@ -4,7 +4,11 @@ from aiogram.exceptions import TelegramAPIError, TelegramForbiddenError
 
 from others.cfg import model, client, log
 from openai import InternalServerError, APITimeoutError
-from database.db import sql_cnn_pool, sql_get_table, sql_include_table, Pool
+from database.db import (
+    sql_get_table,
+    sql_include_table,
+    Pool
+    )
 
 text_router = Router()
 
@@ -75,7 +79,7 @@ async def handler_assistant_update_data(pool: Pool, assistant_response: str, use
                             'assistant',
                             assistant_response)
         
-async def handler_message_chat(message: types.Message, assistant_response: str, thinking: str) -> None:
+async def handler_message_chat(assistant_response: str, thinking: str) -> None:
     try:
         await thinking.edit_text(
             text=assistant_response
@@ -122,19 +126,24 @@ async def video_handler(message: types.Message) -> None:
         )
     
 @text_router.message(F.text)
-async def text_handler(message: types.Message) -> None:
-    pool = await sql_cnn_pool()
-    
+async def text_handler(message: types.Message, pool: Pool) -> None:
     message_user = await handler_message_from_user(message, pool)
     
-    await handler_create_history_with_user(message, pool, message_user)
+    await handler_create_history_with_user(message,
+                                           pool,
+                                           message_user)
     
     thinking = await handler_thinking_answer(message)
     
-    context = await handler_create_context_window(pool, message_user)
+    context = await handler_create_context_window(pool,
+                                                  message_user)
     
-    request_to_model = await handler_create_response(message, context)
+    request_to_model = await handler_create_response(message,
+                                                     context)
     
-    await handler_assistant_update_data(pool, request_to_model, message_user)
+    await handler_assistant_update_data(pool,
+                                        request_to_model,
+                                        message_user)
     
-    await handler_message_chat(message, request_to_model, thinking)
+    await handler_message_chat(request_to_model,
+                               thinking)
