@@ -1,19 +1,27 @@
 from others.cfg import log
 from .cfg import DB_HOST, DB_PASSWORD, DB_USER, DB_PORT
 
-from aiomysql import ProgrammingError, IntegrityError, DataError, OperationalError, InterfaceError, InternalError
+from aiomysql import (
+    ProgrammingError, 
+    IntegrityError, 
+    DataError, 
+    OperationalError, 
+    InterfaceError, 
+    InternalError
+    )
+
 from aiomysql.pool import Pool
 
 import aiomysql
 
-async def sql_cnn_pool() -> Pool:
+async def sql_create_pool() -> Pool:
     pool = await aiomysql.create_pool(host=DB_HOST,
                                       password=DB_PASSWORD,
                                       user=DB_USER,
                                       port=DB_PORT,
                                       autocommit=True)
     return pool
-        
+
 async def sql_create_database(pool: Pool) -> None:
     try:
         cnn = await pool.acquire()
