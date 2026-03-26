@@ -1,6 +1,6 @@
 from aiogram import Dispatcher, Bot
 
-from database.db import sql_create_database, sql_create_table, sql_cnn_pool
+from database.db import sql_create_database, sql_create_table, sql_create_pool
 from routers.main_routers import main_router
 from others.cfg import log
 from tokens import api_key
@@ -9,13 +9,16 @@ import asyncio
 
 dspt = Dispatcher()
 dspt.include_router(
-    main_router
+main_router
 )   
-
+    
 async def main():
-    pool = await sql_cnn_pool()
+    pool = await sql_create_pool()
     await sql_create_database(pool)
     await sql_create_table(pool)
+    
+    dspt['pool'] = pool
+    
     try:
         bot = Bot(
             token=api_key
